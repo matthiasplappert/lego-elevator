@@ -35,18 +35,18 @@ head  = 0               # Index of first 'on' pixel
 tail  = -10             # Index of last 'off' pixel
 color = 0xFF0000        # 'On' color (starts red)
 
-while True:                              # Loop forever
+for i in range(59):                              # Loop forever
 
-	strip.setPixelColor(head, color) # Turn on 'head' pixel
-	strip.setPixelColor(tail, 0)     # Turn off 'tail'
+	strip.setPixelColor(i, color) # Turn on 'head' pixel
+	#strip.setPixelColor(tail, 0)     # Turn off 'tail'
 	strip.show()                     # Refresh strip
-	time.sleep(1.0 / 50)             # Pause 20 milliseconds (~50 fps)
+	time.sleep(0.1)             # Pause 20 milliseconds (~50 fps)
 
-	head += 1                        # Advance head position
-	if(head >= numpixels):           # Off end of strip?
-		head    = 0              # Reset to start
-		color >>= 8              # Red->green->blue->black
-		if(color == 0): color = 0xFF0000 # If black, reset to red
+	#head += 1                        # Advance head position
+	#if(head >= numpixels):           # Off end of strip?
+	#	head    = 0              # Reset to start
+	#	color >>= 8              # Red->green->blue->black
+	#	if(color == 0): color = 0xFF0000 # If black, reset to red
 
-	tail += 1                        # Advance tail position
-	if(tail >= numpixels): tail = 0  # Off end? Reset
+	#tail += 1                        # Advance tail position
+	#if(tail >= numpixels): tail = 0  # Off end? Reset
