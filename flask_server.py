@@ -7,6 +7,7 @@ app = Flask(__name__)
 # Todo: log everything
 LOCK_FILENAME = "reserved_for.txt"
 LOCK_TIMER_SECONDS = 30
+elevator = Elevator(DEVICE,BAUDRATE)
 
 def get_status_and_maybe_release_lock():
     if os.path.isfile(LOCK_FILENAME):
@@ -35,7 +36,7 @@ def go_up():
     # Reserves the elevator (lock). Returns either BUSY or OK.
     if get_status_and_maybe_release_lock() == "FREE":
         reserve_for(request.remote_addr)
-        # TODO: insert magic call to tell the elevator to go up
+        elevator.up()
         return "OK"
     else:
         return "BUSY"
@@ -49,8 +50,9 @@ def go_down():
 
     # Renew locker time
     os.utime(LOCK_FILENAME, None)
-    # TODO: insert magic call to tell the elevator to go down
+    elevator.down()
     return "OK"
 
 if __name__ == "__main__":
+    elevator.ready()
     app.run(debug=True)#host="192.168.0.135")
