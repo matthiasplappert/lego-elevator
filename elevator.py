@@ -30,34 +30,28 @@ class Elevator:
         self.strip = strip
         self.strip.begin()
         self.strip.setBrightness(255)
+        self.serial= serial.Serial(self.dev)
+        self.serial.baudrate = 115200
 
         return
 
     def up(self):
         self.wait()
-        self.connect()
         #
         time.sleep(2)
         self.serial.write(b'u')
         time.sleep(8)
         #
-        self.close()
         self.status = ELEVATOR_UP
 
     def down(self):
         self.wait()
-        self.connect()
         #
         time.sleep(2)
         self.serial.write(b'd')
         time.sleep(8)
         #
-        self.close()
         self.status = ELEVATOR_DOWN
-
-    def connect(self):
-        self.serial= serial.Serial(self.dev)
-        self.serial.baudrate = 115200
 
     def close(self):
         self.serial.close()
