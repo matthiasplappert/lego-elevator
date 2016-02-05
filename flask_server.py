@@ -1,5 +1,6 @@
 import os
 import time
+from elevator import Elevator
 from flask import Flask
 from flask import request
 app = Flask(__name__)
