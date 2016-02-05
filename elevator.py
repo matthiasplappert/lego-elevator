@@ -5,9 +5,6 @@ import time
 
 from dotstar import Adafruit_DotStar
 
-BAUDRATE = 115200
-DEVICE = '/dev/ttyACM0'
-
 DATAPIN  = 20
 CLOCKPIN = 21
 NUMPIXELS = 59

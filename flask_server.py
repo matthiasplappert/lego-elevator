@@ -8,6 +8,8 @@ app = Flask(__name__)
 # Todo: log everything
 LOCK_FILENAME = "reserved_for.txt"
 LOCK_TIMER_SECONDS = 30
+BAUDRATE = 115200
+DEVICE = '/dev/ttyACM0'
 elevator = Elevator(DEVICE,BAUDRATE)
 
 def get_status_and_maybe_release_lock():
