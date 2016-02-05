@@ -85,7 +85,7 @@ class Elevator:
 
     def getStatus(self):
         return self.status
-
+"""
 elevator = Elevator(DEVICE,BAUDRATE)
 
 #drives Elevator up
@@ -107,4 +107,4 @@ while( i < 10  ):
 	elevator.up()
 	i=i+1
 elevator.close()
-
+"""
