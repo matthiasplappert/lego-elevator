@@ -16,14 +16,17 @@ NUMPIXELS = 59
 BLUE   = 0x0000FF
 GREEN  = 0xFF0000
 RED    = 0x00FF00
+OFF    = 0x000000
 
-readyTime = 5
-endingTime = 2
+ELEVATOR_DOWN = b'd'
+ELEVATOR_UP = b'u'
 
+TIME_UP_S = 8
+TIME_DOWN_S = 8
 TIME_TO_LEAVE_ELEVATOR_S = 30
 
 class Elevator(threading.Thread):
-    def __init__(self, kill_event, loop_time = 1.0/60):
+    def __init__(self, kill_event, loop_time=1.0 / 60.0):
         self.status = "INIT"
         self.q = Queue()
         self.kill_event = kill_event
@@ -34,8 +37,14 @@ class Elevator(threading.Thread):
         self.strip = Adafruit_DotStar(NUMPIXELS, DATAPIN, CLOCKPIN)
         self.strip.begin()
         self.strip.setBrightness(255)
-        self.serial= serial.Serial(self.dev)
+        self.serial = serial.Serial(self.dev)
         self.serial.baudrate = 115200
+
+        # Initial state
+        self.send_elevator_command(ELEVATOR_DOWN)
+        self.status = "DOWN"
+        self.set_lights(OFF)
+
         super(Elevator, self).__init__()
 
     def onThread(self, function, *args, **kwargs):
@@ -54,30 +63,35 @@ class Elevator(threading.Thread):
             except Empty:
                 pass
 
+    def send_elevator_command(self, command):
+        self.serial.flushInput()  # avoids that the input buffer overfloats
+        self.serial.write(command)
+        self.serial.flush()
+
     def up(self):
         self.status = "GOING_UP"
-        self.serial.write(b'u')
-        time.sleep(8)
-        self.set_lights(BLUE)
-        time.sleep(2)
+        self.send_elevator_command(ELEVATOR_UP)
+        time.sleep(TIME_UP_S)
         self.status = "UP"
+        self.set_lights(GREEN)
 
     def down(self):
         self.status = "GOING_DOWN"
-        self.set_lights(RED)
-        time.sleep(2)
-        self.serial.write(b'd')
-        time.sleep(8)
+        self.send_elevator_command(ELEVATOR_DOWN)
+        self.set_lights(OFF)
+        time.sleep(TIME_DOWN_S)
         self.status = "DOWN"
         time.sleep(TIME_TO_LEAVE_ELEVATOR_S)
-        self.set_lights(GREEN)
-        time.sleep(2)
         self.status = "FREE"
-
+        
     def close(self):
         self.serial.close()
 
     def set_lights(self, color):
         for i in range(NUMPIXELS):
             self.strip.setPixelColor(i, color)
+        if color == OFF:
+            self.strip.setBrightness(0)
+        else:
+            self.strip.setBrightness(255)
         self.strip.show()

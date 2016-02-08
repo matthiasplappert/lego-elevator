@@ -10,11 +10,13 @@ app = Flask(__name__)
 # Todo: log everything
 LOCK_FILENAME = "reserved_for.txt"
 LOCK_TIMER_SECONDS = 60
+
 kill_event = threading.Event()
 queue = Queue()
 elevator = Elevator(kill_event)
 elevator.daemon = True
 elevator.start()
+
 
 def get_status_and_maybe_release_lock():
     if os.path.isfile(LOCK_FILENAME):
@@ -27,10 +29,25 @@ def get_status_and_maybe_release_lock():
                 return "BUSY"
             return "FREE"
         else:
-            with open(LOCK_FILENAME) as f:
-                return f.read()
+            return "BUSY"
     else:
         return "FREE"
+
+
+def is_reserved_for_ip(ip):
+    if not os.path.isfile(LOCK_FILENAME):
+        return False
+
+    file_age_in_seconds = time.time() - os.path.getmtime(LOCK_FILENAME)
+    if file_age_in_seconds > LOCK_TIMER_SECONDS:
+        os.remove(LOCK_FILENAME)
+        return False
+
+    locked_ip = None
+    with open(LOCK_FILENAME, 'r') as f:
+        locked_ip = f.read()
+    return locked_ip == ip
+
 
 def reserve_for(ip):
     with open(LOCK_FILENAME, 'w') as f:
@@ -60,7 +77,7 @@ def go_up():
 def go_down():
     # Only the robot that reserved it can call it!
     # todo: only allow the robot to call this once?
-    if get_status_and_maybe_release_lock() != request.remote_addr:
+    if not is_reserved_for_ip(request.remote_addr):
         return "BAD, BAD ROBOT!"
 
     if elevator.status != "UP":
