@@ -1,10 +1,14 @@
 #!/usr/bin/python
 
 import serial
+from Queue import Queue, Empty
 import time
+import threading
 
 from dotstar import Adafruit_DotStar
 
+BAUDRATE = 115200
+DEVICE = '/dev/ttyACM0'
 DATAPIN  = 20
 CLOCKPIN = 21
 NUMPIXELS = 59
@@ -16,86 +20,64 @@ RED    = 0x00FF00
 readyTime = 5
 endingTime = 2
 
-ELEVATOR_UP   = 1
-ELEVATOR_DOWN = 0
+TIME_TO_LEAVE_ELEVATOR_S = 30
 
-class Elevator:
-    def __init__(self,dev,baudrate):
-        strip = Adafruit_DotStar(NUMPIXELS, DATAPIN, CLOCKPIN)
-        self.baudrate = baudrate
-        self.dev      = dev
+class Elevator(threading.Thread):
+    def __init__(self, kill_event, loop_time = 1.0/60):
+        self.status = "INIT"
+        self.q = Queue()
+        self.kill_event = kill_event
+        self.timeout = loop_time
+        self.baudrate = BAUDRATE
+        self.dev      = DEVICE
 
-        self.status = ELEVATOR_DOWN
-
-        self.strip = strip
+        self.strip = Adafruit_DotStar(NUMPIXELS, DATAPIN, CLOCKPIN)
         self.strip.begin()
         self.strip.setBrightness(255)
         self.serial= serial.Serial(self.dev)
         self.serial.baudrate = 115200
+        super(Elevator, self).__init__()
 
-        return
+    def onThread(self, function, *args, **kwargs):
+        self.q.put((function, args, kwargs))
+
+    def run(self):
+        self.down()
+        while True:
+            if self.kill_event.is_set():
+                self.close()
+                return
+
+            try:
+                function, args, kwargs = self.q.get(timeout=self.timeout)
+                function(*args, **kwargs)
+            except Empty:
+                pass
 
     def up(self):
-        self.wait()
-        #
-        time.sleep(2)
+        self.status = "GOING_UP"
         self.serial.write(b'u')
         time.sleep(8)
-        #
-        self.status = ELEVATOR_UP
+        self.set_lights(BLUE)
+        time.sleep(2)
+        self.status = "UP"
 
     def down(self):
-        self.wait()
-        #
+        self.status = "GOING_DOWN"
+        self.set_lights(RED)
         time.sleep(2)
         self.serial.write(b'd')
         time.sleep(8)
-        #
-        self.status = ELEVATOR_DOWN
+        self.status = "DOWN"
+        time.sleep(TIME_TO_LEAVE_ELEVATOR_S)
+        self.set_lights(GREEN)
+        time.sleep(2)
+        self.status = "FREE"
 
     def close(self):
         self.serial.close()
 
-    def wait(self):
+    def set_lights(self, color):
         for i in range(NUMPIXELS):
-            self.strip.setPixelColor(i,RED)
+            self.strip.setPixelColor(i, color)
         self.strip.show()
-
-    def ready(self):
-        for i in range(NUMPIXELS):
-            self.strip.setPixelColor(i,GREEN)
-        self.strip.show()
-        time.sleep(readyTime)
-
-
-    def ending(self):
-        for i in range(NUMPIXELS):
-                self.strip.setPixelColor(i,BLUE)
-        self.strip.show()
-        time.sleep(endingTime)
-
-    def getStatus(self):
-        return self.status
-"""
-elevator = Elevator(DEVICE,BAUDRATE)
-
-#drives Elevator up
-
-print "Starts"
-elevator.up()
-print "Starting Loop"
-
-i = 0
-while( i < 10  ):
-	print "Ready"
-	elevator.ready()
-	print "Ending"
-	elevator.ending()
-	print "Down"
-	elevator.down()	
-	time.sleep(5)
-	print "Driving UP"
-	elevator.up()
-	i=i+1
-elevator.close()
-"""
