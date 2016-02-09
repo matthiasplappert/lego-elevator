@@ -95,8 +95,6 @@ def go_down():
     if elevator.status != "UP":
         return "WAIT"
 
-    # Renew locker time
-    os.utime(LOCK_FILENAME, None)
     elevator.onThread(elevator.down)
     return "OK"
 
