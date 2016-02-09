@@ -27,8 +27,10 @@ def watch_dog():
         if os.path.isfile(LOCK_FILENAME):
             file_age_in_seconds = time.time() - os.path.getmtime(LOCK_FILENAME)
             if file_age_in_seconds > LOCK_TIMER_SECONDS:
+                print('removing lock, elevator status is {}'.format(elevator.status))
                 os.remove(LOCK_FILENAME)
-                if elevator.status not in ("DOWN", "FREE"):
+                if elevator.status not in ("DOWN", "GOING_DOWN", "FREE"):
+                    print('forcing elevator to go down')
                     elevator.onThread(elevator.down)
         time.sleep(1)
 watch_dog_thread = threading.Thread(target=watch_dog)
