@@ -5,6 +5,8 @@ from Queue import Queue
 from elevator import Elevator
 from flask import Flask
 from flask import request
+from datetime import datetime
+from datetime import timedelta
 app = Flask(__name__)
 
 # Todo: log everything
@@ -17,6 +19,7 @@ elevator = Elevator(kill_event)
 elevator.daemon = True
 elevator.start()
 
+start_time = datetime.now() + timedelta(minutes=5)
 
 def get_status_and_maybe_release_lock():
     if os.path.isfile(LOCK_FILENAME):
@@ -87,6 +90,10 @@ def go_down():
     os.utime(LOCK_FILENAME, None)
     elevator.onThread(elevator.down)
     return "OK"
+
+@app.route("/get_start_time/")
+def get_start_time():
+    return start_time.strftime("%H:%M:%S")
 
 if __name__ == "__main__":
     app.run(debug=True, host='192.168.0.5')
