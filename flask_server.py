@@ -14,6 +14,7 @@ LOCK_FILENAME = "reserved_for.txt"
 LOCK_TIMER_SECONDS = 60
 
 # Elevator thread
+print('creating elevator thread')
 kill_event = threading.Event()
 queue = Queue()
 elevator = Elevator(kill_event)
@@ -32,6 +33,7 @@ def watch_dog():
                 print('forcing elevator to go down')
                 elevator.onThread(elevator.down)
         time.sleep(1)
+print('creating watchdog thread')
 watch_dog_thread = threading.Thread(target=watch_dog)
 watch_dog_thread.daemon = True
 watch_dog_thread.start()
@@ -103,5 +105,5 @@ def get_start_time():
     return start_time.strftime("%H:%M:%S")
 
 if __name__ == "__main__":
-    app.run(debug=True, host='192.168.0.5')
+    app.run(debug=True, host='192.168.0.5', use_reloader=False)
     kill_event.set()
