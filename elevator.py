@@ -23,7 +23,7 @@ ELEVATOR_UP = b'u'
 
 TIME_UP_S = 8
 TIME_DOWN_S = 8
-TIME_TO_LEAVE_ELEVATOR_S = 30
+TIME_TO_LEAVE_ELEVATOR_S = 0  # disabled since the lock already guarantees that
 
 class Elevator(threading.Thread):
     def __init__(self, kill_event, loop_time=1.0 / 60.0):
