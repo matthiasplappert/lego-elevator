@@ -1,6 +1,7 @@
 import os
 import time
 import threading
+import logging
 from Queue import Queue
 from elevator import Elevator
 from flask import Flask
@@ -9,12 +10,13 @@ from datetime import datetime
 from datetime import timedelta
 app = Flask(__name__)
 
-# Todo: log everything
+logging.basicConfig(level=logging.DEBUG)
+
 LOCK_FILENAME = "reserved_for.txt"
 LOCK_TIMER_SECONDS = 60
 
 # Elevator thread
-print('creating elevator thread')
+logging.info('creating elevator thread')
 kill_event = threading.Event()
 queue = Queue()
 elevator = Elevator(kill_event)
@@ -28,12 +30,16 @@ def watch_dog():
         if os.path.isfile(LOCK_FILENAME):
             file_age_in_seconds = time.time() - os.path.getmtime(LOCK_FILENAME)
             if file_age_in_seconds > LOCK_TIMER_SECONDS:
-                print('removing lock, elevator status is {}'.format(elevator.status))
+                locked_ip = None
+                with open(LOCK_FILENAME, 'r') as f:
+                    locked_ip = f.read()
+                logging.info('releasing lock held by IP {}'.format(locked_ip))
                 os.remove(LOCK_FILENAME)
-                print('forcing elevator to go down')
+                logging.info('elevator status is {}, forcing elevator to go down'.format(elevator.status))
                 elevator.onThread(elevator.down)
         time.sleep(1)
-print('creating watchdog thread')
+
+logging.info('creating watchdog thread')
 watch_dog_thread = threading.Thread(target=watch_dog)
 watch_dog_thread.daemon = True
 watch_dog_thread.start()
@@ -64,6 +70,7 @@ def is_reserved_for(ip):
 
 
 def reserve_for(ip):
+    logging.info('robot with IP {} has acquired the lock'.format(ip))
     with open(LOCK_FILENAME, 'w') as f:
         f.write(ip)
 
@@ -90,8 +97,8 @@ def go_up():
 @app.route("/go_down/")
 def go_down():
     # Only the robot that reserved it can call it!
-    # todo: only allow the robot to call this once?
     if not is_reserved_for(request.remote_addr):
+        logging.warn('robot with IP {} told elevator to go down but did not hold the lock'.format(request.remote_addr))
         return "BAD, BAD ROBOT!"
 
     if elevator.status != "UP":
